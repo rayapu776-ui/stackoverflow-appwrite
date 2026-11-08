@@ -3,7 +3,7 @@ import createAnswerCollection from "./answer.collection";
 import createCommentCollection from "./comment.collection";
 import { databases } from "./config";
 import createQuestionCollection from "./question.collection";
-import getOrCreateStorage from "./storage.collction";
+import getOrCreateStorage from "./storageSetup";
 import createVoteCollection from "./vote.collection";
 
 export default async function getOrCreateDB() {
