@@ -77,6 +77,7 @@ export const useAuthStore = create<IAuthStore>()(
                 try {
                     await account.create(ID.unique(), email, password, name);
                     const session = await account.createEmailPasswordSession(email, password);
+                    await account.updatePrefs({ reputation: 0 });
                     const [user, { jwt }] = await Promise.all([
                         account.get<UserPrefs>(),
                         account.createJWT(),

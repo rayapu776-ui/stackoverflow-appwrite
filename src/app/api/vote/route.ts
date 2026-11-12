@@ -6,7 +6,6 @@ import { ID, Query } from "node-appwrite";
 
 export async function POST(request: NextRequest) {
     try {
-        // grab the data
         const { voteById, votedById, voteStatus, type, typeId } = await request.json();
         const vById = votedById || voteById;
 
@@ -17,71 +16,58 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // list-document
-        const response = await databases.listDocuments(
-            db,
-            voteCollection,
-            [
-                Query.equal("type", type),
-                Query.equal("typeId", typeId),
-                Query.equal("votedById", vById),
-            ]
-        );
-
-        if (response.documents.length > 0) {
-            await databases.deleteDocument(db, voteCollection, response.documents[0].$id);
-
-            // decrease the reputation
-            const QuestionOrAnswer = await databases.getDocument(
-                db,
-                type === "question" ? questionCollection : answerCollection,
-                typeId
+        if (!["question", "answer"].includes(type)) {
+            return NextResponse.json(
+                { error: "Invalid vote type; expected 'question' or 'answer'" },
+                { status: 400 }
             );
-
-            const authorPrefs = await users.getPrefs<UserPrefs>(QuestionOrAnswer.authorId);
-
-            await users.updatePrefs(QuestionOrAnswer.authorId, {
-                reputation:
-                    response.documents[0].voteStatus === "upvoted"
-                        ? Number(authorPrefs.reputation || 0) - 1
-                        : Number(authorPrefs.reputation || 0) + 1,
-            });
         }
 
-        // That means prev vote does not exist or vote status changes
+        if (!["upvoted", "downvoted"].includes(voteStatus)) {
+            return NextResponse.json(
+                { error: "Invalid voteStatus; expected 'upvoted' or 'downvoted'" },
+                { status: 400 }
+            );
+        }
+
+        const response = await databases.listDocuments(db, voteCollection, [
+            Query.equal("type", type),
+            Query.equal("typeId", typeId),
+            Query.equal("votedById", vById),
+        ]);
+
+        let reputationDelta = 0;
+
+        if (response.documents.length > 0) {
+            const prevVote = response.documents[0];
+            await databases.deleteDocument(db, voteCollection, prevVote.$id);
+            reputationDelta += prevVote.voteStatus === "upvoted" ? -1 : 1;
+        }
+
+        // Create new vote if no previous vote existed or vote status changed
         let doc = null;
         if (response.documents[0]?.voteStatus !== voteStatus) {
-                doc = await databases.createDocument(
-                db,
-                voteCollection,
-                ID.unique(),
-                {
-                    type,
-                    typeId,
-                    voteStatus,
-                    votedById: vById,
-                }
-            );
+            doc = await databases.createDocument(db, voteCollection, ID.unique(), {
+                type,
+                typeId,
+                voteStatus,
+                votedById: vById,
+            });
+            reputationDelta += voteStatus === "upvoted" ? 1 : -1;
+        }
 
-            const QuestionOrAnswer = await databases.getDocument(
+        if (reputationDelta !== 0) {
+            const questionOrAnswer = await databases.getDocument(
                 db,
                 type === "question" ? questionCollection : answerCollection,
                 typeId
             );
 
-            const authorPrefs = await users.getPrefs<UserPrefs>(QuestionOrAnswer.authorId);
+            const authorPrefs = await users.getPrefs<UserPrefs>(questionOrAnswer.authorId);
 
-            // If vote was  present
-            
-            if (voteStatus === "upvoted") {
-                await users.updatePrefs(QuestionOrAnswer.authorId, {
-                    reputation: Number(authorPrefs.reputation || 0) + 1,
-                });
-            } else {
-                await users.updatePrefs(QuestionOrAnswer.authorId, {
-                    reputation: Number(authorPrefs.reputation || 0) - 1,
-                });
-            }
+            await users.updatePrefs(questionOrAnswer.authorId, {
+                reputation: Number(authorPrefs.reputation || 0) + reputationDelta,
+            });
         }
 
         const [upvotes, downvotes] = await Promise.all([
@@ -105,11 +91,9 @@ export async function POST(request: NextRequest) {
                     document: doc,
                     voteResult: upvotes.total - downvotes.total,
                 },
-                message: "vote handled",
+                message: "Vote handled",
             },
-            {
-                status: 200,
-            }
+            { status: 200 }
         );
     } catch (error: unknown) {
         const err = error as { message?: string; status?: number; code?: number };

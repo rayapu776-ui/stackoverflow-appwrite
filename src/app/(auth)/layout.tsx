@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
 import { useAuthStore } from "@/store/Auth";
 import { useRouter } from "next/navigation";
 import React from "react";
 
-
-const Layout = ({children} : {children : React.ReactNode}) => {
-    const {session} = useAuthStore()
-    const router = useRouter()
+const Layout = ({ children }: { children: React.ReactNode }) => {
+    const { session } = useAuthStore();
+    const router = useRouter();
 
     React.useEffect(() => {
-        if(session){
-            router.push("/")
+        if (session) {
+            router.push("/");
         }
-    } , [session , router])
+    }, [session, router]);
 
-    if (session){
-        return null
+    if (session) {
+        return null;
     }
 
     return (
-        <div className="">
-            <div className="">{children}</div>
+        <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
+            {children}
         </div>
-    )
-}
+    );
+};
+
 export default Layout;

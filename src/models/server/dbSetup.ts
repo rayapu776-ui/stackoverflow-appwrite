@@ -3,7 +3,6 @@ import createAnswerCollection from "./answer.collection";
 import createCommentCollection from "./comment.collection";
 import { databases } from "./config";
 import createQuestionCollection from "./question.collection";
-import getOrCreateStorage from "./storageSetup";
 import createVoteCollection from "./vote.collection";
 
 export default async function getOrCreateDB() {
@@ -15,13 +14,12 @@ export default async function getOrCreateDB() {
             await databases.create(db, db);
             console.log("Database created");
 
-            // create collections & storage bucket
+            // create collections
             await Promise.all([
                 createQuestionCollection(),
                 createAnswerCollection(),
                 createCommentCollection(),
                 createVoteCollection(),
-                getOrCreateStorage(),
             ]);
             console.log("Collections created");
             console.log("Database connected");
