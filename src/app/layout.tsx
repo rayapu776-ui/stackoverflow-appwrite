@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             lang="en"
             className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
         >
-            <body className="flex min-h-full flex-col overflow-x-hidden bg-background font-sans text-foreground">
+            <body className="flex min-h-full flex-col overflow-x-hidden bg-background font-sans text-base text-foreground">
                 <Navbar />
                 <main className="flex-1">{children}</main>
             </body>
