@@ -3,10 +3,19 @@ import { Avatars, Client, Databases, Storage, Users } from "node-appwrite";
 
 const client = new Client();
 
-client
-    .setEndpoint(env.appwrite.endpoint)
-    .setProject(env.appwrite.projectId)
-    .setKey(env.appwrite.apikey);
+const endpoint = env.appwrite.endpoint.trim();
+const projectId = env.appwrite.projectId.trim();
+const apikey = env.appwrite.apikey.trim();
+
+if (endpoint && endpoint !== "undefined") {
+    client.setEndpoint(endpoint);
+}
+if (projectId && projectId !== "undefined") {
+    client.setProject(projectId);
+}
+if (apikey && apikey !== "undefined") {
+    client.setKey(apikey);
+}
 
 const users = new Users(client);
 const databases = new Databases(client);
